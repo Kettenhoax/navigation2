@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <utility>
 #include <algorithm>
 #include <string>
 #include <memory>
@@ -69,6 +70,8 @@ void RegulatedPurePursuitController::configure(
   double control_frequency = 20.0;
 
   declare_parameter_if_not_declared(
+    node, plugin_name_ + ".reverse", rclcpp::ParameterValue(false));
+  declare_parameter_if_not_declared(
     node, plugin_name_ + ".desired_linear_vel", rclcpp::ParameterValue(0.5));
   declare_parameter_if_not_declared(
     node, plugin_name_ + ".max_linear_accel", rclcpp::ParameterValue(2.5));
@@ -118,6 +121,7 @@ void RegulatedPurePursuitController::configure(
   declare_parameter_if_not_declared(
     node, plugin_name_ + ".goal_dist_tol", rclcpp::ParameterValue(0.25));
 
+  node->get_parameter(plugin_name_ + ".reverse", reverse_);
   node->get_parameter(plugin_name_ + ".desired_linear_vel", desired_linear_vel_);
   node->get_parameter(plugin_name_ + ".max_linear_accel", max_linear_accel_);
   node->get_parameter(plugin_name_ + ".max_linear_decel", max_linear_decel_);
@@ -212,7 +216,7 @@ double RegulatedPurePursuitController::getLookAheadDistance(const geometry_msgs:
   // Else, use the static look ahead distance
   double lookahead_dist = lookahead_dist_;
   if (use_velocity_scaled_lookahead_dist_) {
-    lookahead_dist = speed.linear.x * lookahead_time_;
+    lookahead_dist = std::abs(speed.linear.x) * lookahead_time_;
     lookahead_dist = std::clamp(lookahead_dist, min_lookahead_dist_, max_lookahead_dist_);
   }
 
@@ -262,6 +266,9 @@ geometry_msgs::msg::TwistStamped RegulatedPurePursuitController::computeVelocity
 
       // Apply curvature to angular velocity after constraining linear velocity
       angular_vel = linear_vel * curvature;
+      if (reverse_) {
+        angular_vel = -angular_vel;
+      }
   }
 
   // Collision checking on this velocity heading
@@ -346,7 +353,7 @@ bool RegulatedPurePursuitController::isCollisionImminent(
   pose_msg.header.frame_id = arc_pts_msg.header.frame_id;
   pose_msg.header.stamp = arc_pts_msg.header.stamp;
 
-  const double projection_time = costmap_->getResolution() / linear_vel;
+  const double projection_time = costmap_->getResolution() / std::abs(linear_vel);
 
   geometry_msgs::msg::Pose2D curr_pose;
   curr_pose.x = robot_pose.pose.position.x;
@@ -463,6 +470,9 @@ void RegulatedPurePursuitController::applyConstraints(
   const double min_feasible_linear_speed = curr_speed.linear.x - max_linear_decel_ * dt;
   linear_vel = std::clamp(linear_vel, min_feasible_linear_speed, max_feasible_linear_speed);
   linear_vel = std::clamp(linear_vel, 0.0, desired_linear_vel_);
+  if (reverse_) {
+    linear_vel = -linear_vel;
+  }
 }
 
 void RegulatedPurePursuitController::setPlan(const nav_msgs::msg::Path & path)
@@ -555,7 +565,7 @@ bool RegulatedPurePursuitController::transformPose(
   return false;
 }
 
-}  // namespace nav2_pure_pursuit_controller
+}  // namespace nav2_regulated_pure_pursuit_controller
 
 // Register this controller as a nav2_core plugin
 PLUGINLIB_EXPORT_CLASS(

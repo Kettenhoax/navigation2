@@ -214,6 +214,7 @@ protected:
   nav2_costmap_2d::Costmap2D * costmap_;
   rclcpp::Logger logger_ {rclcpp::get_logger("RegulatedPurePursuitController")};
 
+  bool reverse_;
   double desired_linear_vel_;
   double lookahead_dist_;
   double rotate_to_heading_angular_vel_;

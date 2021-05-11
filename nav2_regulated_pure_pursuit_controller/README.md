@@ -48,6 +48,7 @@ Mixing the proximity and curvature regulated linear velocities with the time-sca
 
 | Parameter | Description | 
 |-----|----|
+| `reverse` | Whether to drive forward or in reverse. | 
 | `desired_linear_vel` | The desired maximum linear velocity to use. | 
 | `max_linear_accel` | Acceleration for linear velocity | 
 | `max_linear_decel` | Deceleration for linear velocity | 
