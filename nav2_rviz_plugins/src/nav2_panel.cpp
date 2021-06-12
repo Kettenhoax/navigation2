@@ -506,7 +506,7 @@ Nav2Panel::onNewGoal(double x, double y, double theta, QString frame)
 {
   auto pose = geometry_msgs::msg::PoseStamped();
 
-  pose.header.stamp = rclcpp::Clock().now();
+  pose.header.stamp = getDisplayContext()->getClock()->now();
   pose.header.frame_id = frame.toStdString();
   pose.pose.position.x = x;
   pose.pose.position.y = y;
