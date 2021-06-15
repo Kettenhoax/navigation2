@@ -53,9 +53,15 @@ inline BT::NodeStatus RemovePassedGoals::tick()
 
   using namespace nav2_util::geometry_utils;  // NOLINT
 
+  auto global_frame = goal_poses[0].header.frame_id;
+  if (global_frame.empty()) {
+    // fallback to given global frame if frame_id in input pose is not set
+    global_frame = global_frame_;
+  }
+
   geometry_msgs::msg::PoseStamped current_pose;
   if (!nav2_util::getCurrentPose(
-      current_pose, *tf_, global_frame_, robot_base_frame_,
+      current_pose, *tf_, global_frame, robot_base_frame_,
       transform_tolerance_))
   {
     return BT::NodeStatus::FAILURE;
